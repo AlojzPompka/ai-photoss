@@ -1,4 +1,4 @@
-const ALLOWED_ORIGIN = "https://aloizpompka.github.io";
+
 const MODEL = "@cf/runwayml/stable-diffusion-v1-5-inpainting";
 
 function json(data, status = 200) {
@@ -6,37 +6,47 @@ function json(data, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+      "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-App-Password",
-      "Vary": "Origin",
       "Cache-Control": "no-store"
     }
+  });
+}
+
+function cors(response) {
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-App-Password"
+  );
+  headers.set("Cache-Control", "no-store");
+  return new Response(response.body, {
+    status: response.status,
+    headers
   });
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const origin = request.headers.get("Origin");
-
-    if (origin && origin !== ALLOWED_ORIGIN) {
-      return new Response("Origin not allowed", { status: 403 });
-    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+          "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-App-Password",
-          "Vary": "Origin"
+          "Access-Control-Allow-Headers":
+            "Content-Type, X-App-Password",
+          "Access-Control-Max-Age": "86400"
         }
       });
     }
 
-    if (url.pathname === "/health" && request.method === "GET") {
+    if (url.pathname === "/health") {
       return json({ status: "online" });
     }
 
@@ -45,84 +55,111 @@ export default {
     }
 
     if (request.method !== "POST") {
-      return json({ error: "Wymagana metoda POST." }, 405);
+      return json({ error: "Dozwolona jest metoda POST." }, 405);
     }
 
-    if (!env.APP_PASSWORD) {
-      return json({ error: "Brak sekretu APP_PASSWORD w Cloudflare." }, 500);
+    const password = env.APP_PASSWORD;
+    if (!password) {
+      return json({
+        error: "Brak sekretu APP_PASSWORD w ustawieniach Workera."
+      }, 500);
     }
 
-    if (request.headers.get("X-App-Password") !== env.APP_PASSWORD) {
-      return json({ error: "Nieprawidłowy kod dostępu." }, 401);
+    if (request.headers.get("X-App-Password") !== password) {
+      return json({ error: "Nieprawidłowe hasło aplikacji." }, 401);
     }
 
     if (!env.AI) {
-      return json({ error: "Brak bindingu Workers AI o nazwie AI." }, 500);
+      return json({
+        error: "Brak bindingu Workers AI o nazwie AI."
+      }, 500);
     }
 
     try {
       const form = await request.formData();
       const image = form.get("image");
       const mask = form.get("mask");
-      const prompt = form.get("prompt");
+      const prompt = String(form.get("prompt") || "").trim();
 
-      if (!(image instanceof File) ||
-          typeof prompt !== "string" ||
-          !prompt.trim()) {
-        return json({ error: "Brakuje zdjęcia lub opisu." }, 400);
+      if (!image || typeof image.arrayBuffer !== "function") {
+        return json({ error: "Nie otrzymałem zdjęcia." }, 400);
       }
 
-      if (!(mask instanceof File)) {
+      if (!mask || typeof mask.arrayBuffer !== "function") {
+        return json({ error: "Nie otrzymałem maski." }, 400);
+      }
+
+      if (!prompt) {
+        return json({ error: "Wpisz opis zmiany." }, 400);
+      }
+
+      if (image.size > 10 * 1024 * 1024 ||
+          mask.size > 10 * 1024 * 1024) {
         return json({
-          error: "Strona nie wysłała maski. Trzeba poprawić index.html."
-        }, 400);
-      }
-
-      if (image.size > 5 * 1024 * 1024 ||
-          mask.size > 5 * 1024 * 1024) {
-        return json({ error: "Zdjęcie lub maska przekracza 5 MB." }, 413);
+          error: "Zdjęcie lub maska przekracza 10 MB."
+        }, 413);
       }
 
       const imageBytes = new Uint8Array(await image.arrayBuffer());
       const maskBytes = new Uint8Array(await mask.arrayBuffer());
 
       const result = await env.AI.run(MODEL, {
+        prompt,
         image: Array.from(imageBytes),
         mask: Array.from(maskBytes),
-        prompt: prompt.trim().slice(0, 1000)
+        num_steps: 20,
+        strength: 1,
+        guidance: 7.5
       });
 
-      if (!result || !result.image) {
-        return json({ error: "Model nie zwrócił obrazu." }, 502);
+      let output = result?.image ?? result;
+
+      if (output instanceof ReadableStream) {
+        return cors(new Response(output, {
+          headers: { "Content-Type": "image/png" }
+        }));
       }
 
-      let output;
+      if (output instanceof Uint8Array ||
+          output instanceof ArrayBuffer) {
+        return cors(new Response(output, {
+          headers: { "Content-Type": "image/png" }
+        }));
+      }
 
-      if (typeof result.image === "string") {
-        const binary = atob(result.image);
-        output = new Uint8Array(binary.length);
+      if (Array.isArray(output)) {
+        return cors(new Response(new Uint8Array(output), {
+          headers: { "Content-Type": "image/png" }
+        }));
+      }
 
+      if (typeof output === "string") {
+        const base64 = output.replace(
+          /^data:image\/[^;]+;base64,/,
+          ""
+        );
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) {
-          output[i] = binary.charCodeAt(i);
+          bytes[i] = binary.charCodeAt(i);
         }
-      } else {
-        output = new Uint8Array(result.image);
+        return cors(new Response(bytes, {
+          headers: { "Content-Type": "image/png" }
+        }));
       }
-
-      return new Response(output, {
-        headers: {
-          "Content-Type": "image/png",
-          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-          "Vary": "Origin",
-          "Cache-Control": "no-store"
-        }
-      });
-    } catch (error) {
-      console.error("Photo edit error:", error);
 
       return json({
-        error: "Błąd AI: " +
-          String(error?.message || error).slice(0, 400)
+        error: "Model zwrócił nieoczekiwany format wyniku.",
+        resultType: typeof result,
+        resultKeys: result && typeof result === "object"
+          ? Object.keys(result)
+          : []
+      }, 502);
+
+    } catch (error) {
+      return json({
+        error: "Błąd edycji AI.",
+        details: String(error?.message || error).slice(0, 1200)
       }, 500);
     }
   }
