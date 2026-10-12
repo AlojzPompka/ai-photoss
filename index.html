@@ -7,28 +7,27 @@
 <title>Photo Studio AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101116;color:#f5f5f7;font:16px system-ui,sans-serif;padding:20px;max-width:760px;margin:auto}
-h1{font-size:27px;margin:8px 0}
+body{margin:0 auto;padding:16px;max-width:760px;background:#101116;color:#f5f5f7;font:16px system-ui,sans-serif}
+h1{font-size:27px}
 p{color:#b8b9c5;line-height:1.5}
 .panel{background:#1c1d26;border:1px solid #343543;border-radius:16px;padding:16px;margin:16px 0}
 label{display:block;margin:13px 0 7px;font-weight:600}
-input,textarea,button{font:inherit;width:100%;border-radius:10px;padding:12px}
+input,textarea,button{width:100%;font:inherit;padding:12px;border-radius:10px}
 input,textarea{background:#11121a;color:white;border:1px solid #454657}
-input[type=file]{padding:10px}
 button{background:#7765ff;color:white;border:0;font-weight:700;margin-top:12px}
 button:disabled{opacity:.5}
 #stage{position:relative;width:100%;margin-top:14px;touch-action:none}
 #photo{display:block;width:100%;height:auto;border-radius:10px}
 #mask{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-#status{white-space:pre-wrap;overflow-wrap:anywhere}
 .row{display:flex;gap:10px}
 .row button{flex:1}
+#status{white-space:pre-wrap;overflow-wrap:anywhere}
 small{color:#b8b9c5}
 </style>
 </head>
 <body>
 <h1>Photo Studio AI</h1>
-<p>Wybierz zdjęcie, zaznacz pędzlem obszar do zmiany i wpisz opis.</p>
+<p>Wybierz zdjęcie, zamaluj obszar do zmiany i opisz efekt.</p>
 
 <div class="panel">
 <label for="photoFile">1. Wybierz zdjęcie</label>
@@ -52,19 +51,19 @@ small{color:#b8b9c5}
 <div class="panel">
 <label for="worker">2. Adres Workera</label>
 <input id="worker" type="url"
-value="https://tight-water-d294.c87dwd55fw.workers.dev"
-autocomplete="url">
+value="https://tight-water-d294.c87dwd55fw.workers.dev">
 
 <label for="password">Hasło aplikacji</label>
 <input id="password" type="password" autocomplete="off"
-placeholder="Hasło APP_PASSWORD">
+placeholder="Hasło aplikacji">
 
 <label for="prompt">3. Opisz zmianę</label>
 <textarea id="prompt" rows="3"
-placeholder="Np. zmień kolor kurtki na zielony"></textarea>
+placeholder="Opisz, co AI ma zmienić"></textarea>
 
 <button id="edit" type="button">Edytuj zdjęcie przez AI</button>
-<p id="status" role="status">Wybierz zdjęcie, aby rozpocząć.</p>
+<p id="status">Wybierz zdjęcie, aby rozpocząć.</p>
+
 <div id="resultBox" hidden>
 <h2>Wynik</h2>
 <img id="result" alt="Wynik edycji"
@@ -75,170 +74,184 @@ style="display:block;width:100%;border-radius:10px">
 
 <script>
 "use strict";
-
 const $ = id => document.getElementById(id);
-let file = null;
-let imageURL = null;
-let brushOn = true;
-let drawing = false;
-
+let file = null, imageURL = null, brushOn = true, drawing = false;
 const photo = $("photo");
 const canvas = $("mask");
 const ctx = canvas.getContext("2d");
 
-function status(message) {
-  $("status").textContent = message;
-}
+function status(s){ $("status").textContent = s; }
+function clearMask(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-function clearMask() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-$("photoFile").addEventListener("change", async event => {
-  const selected = event.target.files && event.target.files[0];
+$("photoFile").addEventListener("change", e => {
+  const selected = e.target.files?.[0];
   if (!selected) return;
-
   if (!selected.type.startsWith("image/")) {
     status("Wybierz plik obrazu.");
     return;
   }
-
   file = selected;
-  status("Wczytuję zdjęcie…");
-
+  status("Wczytuję zdjęcie...");
   if (imageURL) URL.revokeObjectURL(imageURL);
   imageURL = URL.createObjectURL(file);
 
   photo.onload = () => {
     canvas.width = photo.naturalWidth;
     canvas.height = photo.naturalHeight;
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
     $("stage").hidden = false;
     clearMask();
     $("resultBox").hidden = true;
-    status("Zdjęcie wczytane. Zaznacz obszar do zmiany.");
+    status("Zdjęcie wczytane. Zamaluj obszar do zmiany.");
   };
-
-  photo.onerror = () => {
-    status("Nie udało się odczytać zdjęcia. Spróbuj wybrać JPG lub PNG.");
-  };
-
+  photo.onerror = () => status("Nie udało się otworzyć zdjęcia.");
   photo.src = imageURL;
 });
 
-function point(event) {
-  const rect = canvas.getBoundingClientRect();
+function point(e){
+  const r = canvas.getBoundingClientRect();
   return {
-    x: (event.clientX - rect.left) * canvas.width / rect.width,
-    y: (event.clientY - rect.top) * canvas.height / rect.height
+    x:(e.clientX-r.left)*canvas.width/r.width,
+    y:(e.clientY-r.top)*canvas.height/r.height
   };
 }
-
-canvas.addEventListener("pointerdown", event => {
+canvas.addEventListener("pointerdown", e => {
   if (!brushOn || !file) return;
-  event.preventDefault();
+  e.preventDefault();
   drawing = true;
-  canvas.setPointerCapture(event.pointerId);
-  const p = point(event);
+  canvas.setPointerCapture(e.pointerId);
+  const p = point(e);
   ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
+  ctx.moveTo(p.x,p.y);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = "rgba(255,45,85,0.75)";
+  ctx.strokeStyle = "rgba(255,45,85,0.85)";
   ctx.lineWidth = Number($("brushSize").value) *
-    canvas.width / canvas.getBoundingClientRect().width;
-  ctx.lineTo(p.x + 0.1, p.y + 0.1);
+    canvas.width/canvas.getBoundingClientRect().width;
+  ctx.lineTo(p.x+0.1,p.y+0.1);
   ctx.stroke();
 });
-
-canvas.addEventListener("pointermove", event => {
+canvas.addEventListener("pointermove", e => {
   if (!drawing) return;
-  event.preventDefault();
-  const p = point(event);
-  ctx.lineTo(p.x, p.y);
+  e.preventDefault();
+  const p = point(e);
+  ctx.lineTo(p.x,p.y);
   ctx.stroke();
 });
+function stop(){ drawing=false; ctx.beginPath(); }
+canvas.addEventListener("pointerup",stop);
+canvas.addEventListener("pointercancel",stop);
 
-function stopDrawing() {
-  drawing = false;
-  ctx.beginPath();
-}
-canvas.addEventListener("pointerup", stopDrawing);
-canvas.addEventListener("pointercancel", stopDrawing);
-
-$("clearMask").addEventListener("click", clearMask);
-
-$("toggleBrush").addEventListener("click", () => {
+$("clearMask").onclick = clearMask;
+$("toggleBrush").onclick = () => {
   brushOn = !brushOn;
   $("toggleBrush").textContent =
     "Pędzel: " + (brushOn ? "włączony" : "wyłączony");
   canvas.style.pointerEvents = brushOn ? "auto" : "none";
-});
+};
 
-$("edit").addEventListener("click", async () => {
-  if (!file) {
-    status("Najpierw wybierz zdjęcie.");
-    return;
+// Zmniejsza zdjęcie do maksymalnie 512 px.
+async function makeSmallImage(img){
+  const scale = Math.min(1,512/img.naturalWidth,512/img.naturalHeight);
+  const w = Math.max(1,Math.round(img.naturalWidth*scale));
+  const h = Math.max(1,Math.round(img.naturalHeight*scale));
+  const c = document.createElement("canvas");
+  c.width=w; c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h);
+  const blob = await new Promise(resolve =>
+    c.toBlob(resolve,"image/jpeg",0.78));
+  if (!blob) throw new Error("Nie udało się zmniejszyć zdjęcia.");
+  return {blob,w,h};
+}
+
+// Tworzy czarno-białą maskę o identycznym rozmiarze co zdjęcie.
+// Zamalowane obszary są białe, reszta czarna.
+async function makeSmallMask(w,h){
+  const c = document.createElement("canvas");
+  c.width=w; c.height=h;
+  const mctx = c.getContext("2d");
+  mctx.fillStyle="#000";
+  mctx.fillRect(0,0,w,h);
+
+  const temp = document.createElement("canvas");
+  temp.width=canvas.width; temp.height=canvas.height;
+  const tctx = temp.getContext("2d");
+  tctx.drawImage(canvas,0,0);
+
+  const pixels = tctx.getImageData(0,0,temp.width,temp.height);
+  for(let i=0;i<pixels.data.length;i+=4){
+    const alpha=pixels.data[i+3];
+    pixels.data[i]=255;
+    pixels.data[i+1]=255;
+    pixels.data[i+2]=255;
+    pixels.data[i+3]=alpha;
   }
+  tctx.putImageData(pixels,0,0);
+  mctx.drawImage(temp,0,0,w,h);
 
-  const prompt = $("prompt").value.trim();
-  const worker = $("worker").value.trim().replace(/\/+$/, "");
-  const password = $("password").value;
-
-  if (!prompt) {
-    status("Wpisz opis zmiany.");
-    return;
+  const data=mctx.getImageData(0,0,w,h);
+  for(let i=0;i<data.data.length;i+=4){
+    const white=data.data[i+3]>0 && data.data[i]>0;
+    data.data[i]=white?255:0;
+    data.data[i+1]=white?255:0;
+    data.data[i+2]=white?255:0;
+    data.data[i+3]=255;
   }
-  if (!password) {
-    status("Wpisz hasło aplikacji.");
-    return;
-  }
+  mctx.putImageData(data,0,0);
 
-  $("edit").disabled = true;
-  $("resultBox").hidden = true;
-  status("Wysyłam zdjęcie do AI…");
+  const blob=await new Promise(resolve=>c.toBlob(resolve,"image/png"));
+  if(!blob) throw new Error("Nie udało się przygotować maski.");
+  return blob;
+}
 
-  try {
-    const maskBlob = await new Promise(resolve =>
-      canvas.toBlob(resolve, "image/png")
-    );
+$("edit").onclick = async () => {
+  if(!file){status("Najpierw wybierz zdjęcie.");return;}
+  const prompt=$("prompt").value.trim();
+  const worker=$("worker").value.trim().replace(/\/+$/,"");
+  const password=$("password").value;
+  if(!prompt){status("Wpisz opis zmiany.");return;}
+  if(!password){status("Wpisz hasło aplikacji.");return;}
 
-    if (!maskBlob) throw new Error("Nie udało się przygotować maski.");
+  $("edit").disabled=true;
+  $("resultBox").hidden=true;
 
-    const form = new FormData();
-    form.append("image", file, file.name);
-    form.append("mask", maskBlob, "mask.png");
-    form.append("prompt", prompt);
+  try{
+    status("Zmniejszam zdjęcie i maskę...");
+    const small=await makeSmallImage(photo);
+    const maskBlob=await makeSmallMask(small.w,small.h);
 
-    const response = await fetch(worker + "/edit", {
-      method: "POST",
-      headers: { "X-App-Password": password },
-      body: form
+    const form=new FormData();
+    form.append("image",small.blob,"image.jpg");
+    form.append("mask",maskBlob,"mask.png");
+    form.append("prompt",prompt);
+
+    status("Wysyłam małe zdjęcie do AI...");
+    const response=await fetch(worker+"/edit",{
+      method:"POST",
+      headers:{"X-App-Password":password},
+      body:form
     });
 
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error("HTTP " + response.status + ": " + message);
+    if(!response.ok){
+      const msg=await response.text();
+      throw new Error("HTTP "+response.status+": "+msg);
     }
 
-    const blob = await response.blob();
-    if (!blob.type.startsWith("image/")) {
-      throw new Error("Serwer nie zwrócił pliku obrazu.");
+    const blob=await response.blob();
+    if(!blob.type.startsWith("image/")){
+      throw new Error("Serwer nie zwrócił obrazu.");
     }
 
-    const url = URL.createObjectURL(blob);
-    $("result").src = url;
-    $("download").href = url;
-    $("resultBox").hidden = false;
+    const resultURL=URL.createObjectURL(blob);
+    $("result").src=resultURL;
+    $("download").href=resultURL;
+    $("resultBox").hidden=false;
     status("Gotowe. Możesz obejrzeć i pobrać wynik.");
-  } catch (error) {
-    status("Błąd: " + (error.message || error) +
-      "\nSprawdź adres Workera, hasło i jego logi.");
-  } finally {
-    $("edit").disabled = false;
+  }catch(err){
+    status("Błąd: "+(err.message||err));
+  }finally{
+    $("edit").disabled=false;
   }
-});
+};
 </script>
 </body>
 </html>
