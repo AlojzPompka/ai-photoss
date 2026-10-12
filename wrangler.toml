@@ -1,0 +1,3 @@
+name = "tight-water-d294"
+main = "worker.js"
+compatibility_date = "2026-10-12"
