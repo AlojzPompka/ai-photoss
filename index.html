@@ -1,413 +1,124 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="pl">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<meta name="theme-color" content="#111111">
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101114">
 <title>Photo Studio AI</title>
-
 <style>
+:root{color-scheme:dark;--bg:#101114;--panel:#191b20;--line:#30333b;--muted:#a5a8b3;--accent:#c5f36a;--text:#f5f6f8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#242832 0,#101114 54%);color:var(--text);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:900px;margin:auto;padding:calc(18px + env(safe-area-inset-top)) 13px calc(35px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:11px;margin-bottom:22px}.logo{width:43px;height:43px;border-radius:14px;background:var(--accent);color:#14170e;display:grid;place-items:center;font-size:23px;font-weight:900}.eyebrow{color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:850}h1{font-size:clamp(30px,8vw,44px);line-height:1.03;margin:8px 0 10px;letter-spacing:-.045em}p{margin:0;color:var(--muted)}.intro{font-size:15px;max-width:650px}.layout{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:21px}.panel{background:rgba(25,27,32,.96);border:1px solid var(--line);border-radius:19px;padding:15px;min-width:0}.panel h2{font-size:16px;margin:0 0 13px}.preview{position:relative;min-height:185px;border:1px dashed #4a4e59;border-radius:14px;overflow:hidden;background:#111318;display:flex;align-items:center;justify-content:center}.preview canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}.empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:13px}.empty b{display:block;color:var(--text);font-size:16px;margin:8px 0 4px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:11px}.filebtn,button{border:0;border-radius:12px;padding:12px 13px;font:inherit;font-weight:750;cursor:pointer}.filebtn{background:#292c34;color:var(--text);border:1px solid #3a3d47;display:inline-block}.filebtn input{display:none}.secondary{background:#292c34;color:var(--text);border:1px solid #3a3d47}.primary{background:var(--accent);color:#15180f;flex:1}.primary:disabled{opacity:.55;cursor:wait}label{display:block;font-size:13px;font-weight:750;color:#d9dbe1;margin:13px 0 7px}textarea,input[type=url],input[type=password],input[type=range]{width:100%}textarea,input[type=url],input[type=password]{background:#111318;border:1px solid #393d47;border-radius:12px;padding:12px;color:var(--text);font:inherit;outline:none}textarea{min-height:96px;resize:vertical}textarea:focus,input:focus{border-color:var(--accent)}input[type=range]{accent-color:var(--accent)}.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.chip{font-size:12px;padding:8px 10px;border-radius:999px;background:#292c34;color:#e6e7eb;border:1px solid #3a3d47}.hint{font-size:12px;line-height:1.5;margin-top:9px}.status{display:none;margin-top:12px;padding:12px;border-radius:12px;background:#252a1b;color:#e8f7c8;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.status.error{background:#351e22;color:#ffd9dc}.result{margin-top:14px}.result img{display:block;width:100%;max-height:650px;object-fit:contain;border-radius:12px;background:#101216}.result a{display:inline-block;color:var(--accent);padding:10px 0;font-weight:750}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#252a1b;color:var(--accent);font-size:10px;font-weight:850;margin-bottom:9px}.footer{font-size:11px;text-align:center;color:#777d89;margin-top:19px}.hidden{display:none!important}.full{grid-column:1/-1}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.panel{padding:13px}.preview{min-height:160px}h1{font-size:35px}}
+</style></head>
+<body><main>
+<header class="top"><div class="logo">✦</div><div><div class="eyebrow">AI image editor</div><div style="font-weight:850;font-size:18px">PHOTO STUDIO</div></div></header>
+<h1>Zmień strój.<br>Zachowaj zdjęcie.</h1>
+<p class="intro">Wybierz zdjęcie, zamaluj obszar ubrania i opisz nowy wygląd. Edycja działa w chmurze AI — bez komputera.</p>
 
-*{box-sizing:border-box}
-
-body{margin:0;background:#111;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-
-main{max-width:650px;margin:auto;padding:18px}
-
-h1{font-size:27px;margin:8px 0}
-
-p{color:#aaa;line-height:1.5}
-
-.panel{background:#1d1d1d;border:1px solid #333;border-radius:16px;padding:16px;margin:15px 0}
-
-label{display:block;margin:14px 0 7px;font-weight:600}
-
-input,textarea,select,button{width:100%;font:inherit;border-radius:10px;padding:12px}
-
-input,textarea,select{background:#292929;border:1px solid #444;color:white}
-
-textarea{min-height:90px;resize:vertical}
-
-button{border:0;background:#fff;color:#111;font-weight:700;margin-top:12px}
-
-button.secondary{background:#333;color:white}
-
-button:disabled{opacity:.5}
-
-.preview{width:100%;display:block;border-radius:12px;margin-top:12px}
-
-.small{font-size:13px;color:#999}
-
-#status{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:12px}
-
-a{color:#a9d2ff}
-
-</style>
-
-</head>
-
-<body>
-
-<main>
-
-<h1>Photo Studio AI</h1>
-
-<p>Edytor zdjęć AI. Wybierz zdjęcie, opisz zmianę i wyślij do swojego serwera AI.</p>
-
+<div class="layout">
 <section class="panel">
-
-<label for="photo">1. Wybierz zdjęcie</label>
-
-<input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
-
-<img id="preview" class="preview" hidden alt="Podgląd zdjęcia">
-
-<p class="small">Obsługiwane: JPG, PNG, WebP. Maksymalnie 5 MB.</p>
-
+<h2>01 / Twoje zdjęcie</h2>
+<div class="preview" id="sourcePreview"><div class="empty" id="empty">＋<b>Wybierz zdjęcie</b>JPG, PNG lub WebP · do 5 MB</div><canvas id="photoCanvas" class="hidden"></canvas></div>
+<div class="row"><label class="filebtn">Wybierz zdjęcie<input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp"></label><button class="secondary" id="clearBtn" type="button">Usuń</button></div>
+<label for="brush">Rozmiar pędzla</label><input id="brush" type="range" min="8" max="70" value="28">
+<p class="hint">Zamaluj ubranie, które chcesz zmienić. Biały/zielony obszar to maska. Staraj się nie zaznaczać twarzy ani tła.</p>
+<div class="row"><button class="secondary" id="undoBtn" type="button">Cofnij pociągnięcie</button><button class="secondary" id="clearMaskBtn" type="button">Wyczyść maskę</button></div>
 </section>
 
 <section class="panel">
-
-<label for="prompt">2. Opisz, co zmienić</label>
-
-<textarea id="prompt" placeholder="Opisz dokładnie, jak ma wyglądać edytowane zdjęcie..."></textarea>
-
-<label for="preset">Gotowy przykład</label>
-
-<select id="preset">
-
-<option value="">Wybierz przykład</option>
-
-<option value="Change the person's outfit to a classic military woodland camouflage jacket and trousers. Preserve face, identity, pose, background and lighting.">Mundur kamuflażowy</option>
-
-<option value="Change the person's outfit to a simple black dress. Preserve face, identity, pose, background and lighting.">Czarna sukienka</option>
-
-<option value="Change the person's outfit to a denim jacket and jeans. Preserve face, identity, pose, background and lighting.">Ubranie jeansowe</option>
-
-<option value="Change the person's outfit to a plain white T-shirt and dark trousers. Preserve face, identity, pose, background and lighting.">T-shirt i spodnie</option>
-
-<option value="Replace the background with a realistic forest setting. Preserve the person's face, identity and pose.">Tło leśne</option>
-
-</select>
-
-<label for="worker">3. Adres Cloudflare Worker</label>
-
-<input id="worker" type="url" placeholder="https://twoj-worker.twoje-konto.workers.dev">
-
-<label for="password">Kod dostępu</label>
-
-<input id="password" type="password" placeholder="Hasło ustawione w Cloudflare">
-
-<button id="check" class="secondary" type="button">Sprawdź połączenie</button>
-
-<button id="edit" type="button">Edytuj zdjęcie AI</button>
-
-<div id="status" role="status"></div>
-
+<h2>02 / Nowy strój</h2>
+<label for="prompt">Opisz zmianę</label>
+<textarea id="prompt" maxlength="500" placeholder="Np. realistyczna czarna skórzana kurtka, naturalne fałdy materiału, zachowaj pozę i oświetlenie."></textarea>
+<div class="chips">
+<button class="chip" data-prompt="a realistic black leather jacket, natural folds, preserve the person's pose and original lighting">Czarna ramoneska</button>
+<button class="chip" data-prompt="a crisp white shirt, realistic fabric folds, preserve pose and original lighting">Biała koszula</button>
+<button class="chip" data-prompt="a forest camouflage outdoor jacket, realistic fabric and natural shadows">Kamuflaż leśny</button>
+<button class="chip" data-prompt="an elegant tailored black suit jacket, realistic fabric texture and natural shadows">Elegancka marynarka</button>
+</div>
+<label for="workerUrl">Adres Worker API</label>
+<input id="workerUrl" type="url" inputmode="url" placeholder="https://twoj-worker.twojakonto.workers.dev">
+<label for="accessCode">Kod dostępu</label>
+<input id="accessCode" type="password" autocomplete="off" placeholder="Kod ustawiony w Cloudflare">
+<p class="hint">Kod dostępu jest wysyłany tylko do Twojego endpointu. Nie wpisuj tu tokena Cloudflare API — użyj osobnego hasła aplikacji ustawionego jako sekret Worker.</p>
+<div class="row"><button class="primary" id="editBtn" type="button">✦ Przerób zdjęcie</button></div>
+<div class="row"><button class="secondary" id="testBtn" type="button">Sprawdź połączenie</button></div>
+<div id="status" class="status" role="status" aria-live="polite"></div>
 </section>
-
-<section class="panel" id="resultPanel" hidden>
-
-<h2>Wynik</h2>
-
-<img id="result" class="preview" alt="Wynik edycji">
-
-<a id="download" href="#" download="photo-studio-ai.png">
-
-<button type="button">Zapisz wynik PNG</button>
-
-</a>
-
+<section class="panel result full hidden" id="resultPanel">
+<h2>03 / Gotowy wynik</h2><img id="resultImage" alt="Wynik edycji AI"><div class="row"><a id="downloadLink" download="photo-studio-ai.png">Zapisz wynik PNG</a></div>
 </section>
-
-<p class="small">Uwaga: interfejs wymaga działającego Cloudflare Worker z endpointami /health i /edit. Samo opublikowanie tej strony na GitHub Pages nie uruchamia modelu AI.</p>
-
+</div>
+<p class="footer">Photo Studio AI · GitHub Pages + Cloudflare Workers AI · Nie umieszczaj sekretów w publicznym kodzie.</p>
 </main>
-
 <script>
-
-const photo = document.getElementById("photo");
-
-const preview = document.getElementById("preview");
-
-const promptBox = document.getElementById("prompt");
-
-const preset = document.getElementById("preset");
-
-const workerInput = document.getElementById("worker");
-
-const passwordInput = document.getElementById("password");
-
-const statusBox = document.getElementById("status");
-
-const editButton = document.getElementById("edit");
-
-const checkButton = document.getElementById("check");
-
-let selectedFile = null;
-
-photo.addEventListener("change", () => {
-
-  selectedFile = photo.files && photo.files[0];
-
-  document.getElementById("resultPanel").hidden = true;
-
-  if (!selectedFile) {
-
-    preview.hidden = true;
-
-    return;
-
-  }
-
-  if (!["image/jpeg","image/png","image/webp"].includes(selectedFile.type)) {
-
-    statusBox.textContent = "Wybierz plik JPG, PNG lub WebP.";
-
-    selectedFile = null;
-
-    photo.value = "";
-
-    preview.hidden = true;
-
-    return;
-
-  }
-
-  if (selectedFile.size > 5 * 1024 * 1024) {
-
-    statusBox.textContent = "Zdjęcie jest większe niż 5 MB.";
-
-    selectedFile = null;
-
-    photo.value = "";
-
-    preview.hidden = true;
-
-    return;
-
-  }
-
-  preview.src = URL.createObjectURL(selectedFile);
-
-  preview.hidden = false;
-
-  statusBox.textContent = "";
-
-});
-
-preset.addEventListener("change", () => {
-
-  if (preset.value) promptBox.value = preset.value;
-
-});
-
-function getWorkerUrl() {
-
-  const value = workerInput.value.trim().replace(/\/+$/, "");
-
-  if (!value) throw new Error("Wpisz adres Cloudflare Worker.");
-
-  const url = new URL(value);
-
-  if (url.protocol !== "https:") {
-
-    throw new Error("Adres Workera musi zaczynać się od https://");
-
-  }
-
-  return value;
-
+const $=id=>document.getElementById(id);
+const photoCanvas=$('photoCanvas'), pctx=photoCanvas.getContext('2d'), empty=$('empty');
+let sourceImage=null, maskCanvas=null, maskCtx=null, drawing=false, lastPoint=null, strokes=[], activeStroke=null, resultUrl=null;
+function setStatus(message,error=false){const el=$('status');el.textContent=message;el.style.display='block';el.classList.toggle('error',error)}
+function getUrl(){let v=$('workerUrl').value.trim();if(!v)throw Error('Wklej adres Worker API.');const u=new URL(v);if(u.protocol!=='https:')throw Error('Adres API musi zaczynać się od https://');return u.href.replace(/\/$/,'')}
+function render(){
+ if(!sourceImage)return;
+ pctx.clearRect(0,0,photoCanvas.width,photoCanvas.height);
+ pctx.drawImage(sourceImage,0,0,photoCanvas.width,photoCanvas.height);
+ if(maskCanvas){
+  const md=maskCtx.getImageData(0,0,maskCanvas.width,maskCanvas.height), overlay=pctx.createImageData(photoCanvas.width,photoCanvas.height);
+  for(let i=0;i<md.data.length;i+=4){if(md.data[i]>127){overlay.data[i]=197;overlay.data[i+1]=243;overlay.data[i+2]=106;overlay.data[i+3]=145}}
+  pctx.putImageData(overlay,0,0);
+ }
 }
-
-async function requestWithTimeout(url, options = {}) {
-
-  const controller = new AbortController();
-
-  const timer = setTimeout(() => controller.abort(), 120000);
-
-  try {
-
-    return await fetch(url, {
-
-      ...options,
-
-      signal: controller.signal
-
-    });
-
-  } finally {
-
-    clearTimeout(timer);
-
-  }
-
+function loadFile(file){
+ if(!file)return;
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)){setStatus('Wybierz plik JPG, PNG lub WebP.',true);return}
+ if(file.size>5*1024*1024){setStatus('Zdjęcie jest większe niż 5 MB. Wybierz mniejszy plik.',true);return}
+ const im=new Image();im.onload=()=>{
+  const scale=Math.min(1,768/Math.max(im.naturalWidth,im.naturalHeight));
+  photoCanvas.width=Math.max(256,Math.round(im.naturalWidth*scale));photoCanvas.height=Math.max(256,Math.round(im.naturalHeight*scale));
+  sourceImage=im;maskCanvas=document.createElement('canvas');maskCanvas.width=photoCanvas.width;maskCanvas.height=photoCanvas.height;maskCtx=maskCanvas.getContext('2d');maskCtx.fillStyle='black';maskCtx.fillRect(0,0,maskCanvas.width,maskCanvas.height);
+  strokes=[];photoCanvas.classList.remove('hidden');empty.classList.add('hidden');render();$('resultPanel').classList.add('hidden');$('status').style.display='none';URL.revokeObjectURL(im.src)
+ };im.onerror=()=>setStatus('Nie udało się otworzyć tego zdjęcia.',true);im.src=URL.createObjectURL(file)
 }
-
-checkButton.addEventListener("click", async () => {
-
-  checkButton.disabled = true;
-
-  statusBox.textContent = "Sprawdzam połączenie...";
-
-  try {
-
-    const base = getWorkerUrl();
-
-    const response = await requestWithTimeout(base + "/health");
-
-    const data = await response.json();
-
-    if (!response.ok) {
-
-      throw new Error(data.error || "Błąd połączenia: " + response.status);
-
-    }
-
-    statusBox.textContent = data.status
-
-      ? "Odpowiedź serwera: " + data.status
-
-      : "Serwer odpowiada poprawnie.";
-
-  } catch (error) {
-
-    statusBox.textContent = "Błąd: " + error.message;
-
-  } finally {
-
-    checkButton.disabled = false;
-
-  }
-
-});
-
-editButton.addEventListener("click", async () => {
-
-  if (!selectedFile) {
-
-    statusBox.textContent = "Najpierw wybierz zdjęcie.";
-
-    return;
-
-  }
-
-  const prompt = promptBox.value.trim();
-
-  if (!prompt) {
-
-    statusBox.textContent = "Wpisz opis zmiany.";
-
-    return;
-
-  }
-
-  editButton.disabled = true;
-
-  checkButton.disabled = true;
-
-  statusBox.textContent = "Wysyłam zdjęcie. Generowanie może potrwać...";
-
-  try {
-
-    const base = getWorkerUrl();
-
-    const form = new FormData();
-
-    form.append("image", selectedFile, selectedFile.name);
-
-    form.append("prompt", prompt);
-
-    const password = passwordInput.value;
-
-    const headers = {};
-
-    if (password) headers["X-App-Password"] = password;
-
-    const response = await requestWithTimeout(base + "/edit", {
-
-      method: "POST",
-
-      headers,
-
-      body: form
-
-    });
-
-    const contentType = response.headers.get("content-type") || "";
-
-    if (!response.ok) {
-
-      let message = "Błąd serwera: " + response.status;
-
-      if (contentType.includes("application/json")) {
-
-        const data = await response.json();
-
-        message = data.error || message;
-
-      } else {
-
-        const text = await response.text();
-
-        if (text) message = text.slice(0, 500);
-
-      }
-
-      throw new Error(message);
-
-    }
-
-    if (!contentType.includes("image/")) {
-
-      const text = await response.text();
-
-      throw new Error("Serwer nie zwrócił obrazu. " + text.slice(0, 300));
-
-    }
-
-    const blob = await response.blob();
-
-    const resultUrl = URL.createObjectURL(blob);
-
-    document.getElementById("result").src = resultUrl;
-
-    const download = document.getElementById("download");
-
-    download.href = resultUrl;
-
-    download.download = "photo-studio-ai.png";
-
-    document.getElementById("resultPanel").hidden = false;
-
-    statusBox.textContent = "Gotowe! Wynik pojawił się poniżej.";
-
-  } catch (error) {
-
-    statusBox.textContent =
-
-      "Nie udało się edytować zdjęcia: " + error.message +
-
-      "\nSprawdź adres Workera, kod dostępu i konfigurację modelu AI.";
-
-  } finally {
-
-    editButton.disabled = false;
-
-    checkButton.disabled = false;
-
-  }
-
-});
-
-</script>
-
-</body>
-
-</html>
+$('fileInput').addEventListener('change',e=>loadFile(e.target.files[0]));
+function point(e){const r=photoCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*photoCanvas.width/r.width,y:(e.clientY-r.top)*photoCanvas.height/r.height}}
+function drawSegment(a,b,stroke){
+ maskCtx.strokeStyle='white';maskCtx.lineWidth=Number($('brush').value);maskCtx.lineCap='round';maskCtx.lineJoin='round';maskCtx.beginPath();maskCtx.moveTo(a.x,a.y);maskCtx.lineTo(b.x,b.y);maskCtx.stroke()
+}
+photoCanvas.addEventListener('pointerdown',e=>{if(!sourceImage)return;drawing=true;photoCanvas.setPointerCapture(e.pointerId);lastPoint=point(e);activeStroke=[lastPoint];drawSegment(lastPoint,lastPoint,activeStroke);render()});
+photoCanvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);drawSegment(lastPoint,p,activeStroke);activeStroke.push(p);lastPoint=p;render()});
+function endStroke(){if(drawing&&activeStroke&&activeStroke.length){strokes.push(activeStroke)}drawing=false;activeStroke=null;lastPoint=null}
+photoCanvas.addEventListener('pointerup',endStroke);photoCanvas.addEventListener('pointercancel',endStroke);
+$('undoBtn').onclick=()=>{if(!strokes.length)return;strokes.pop();maskCtx.fillStyle='black';maskCtx.fillRect(0,0,maskCanvas.width,maskCanvas.height);for(const s of strokes){for(let i=0;i<s.length;i++)drawSegment(s[i],s[Math.min(i+1,s.length-1)],s)}render()};
+$('clearMaskBtn').onclick=()=>{if(!maskCanvas)return;maskCtx.fillStyle='black';maskCtx.fillRect(0,0,maskCanvas.width,maskCanvas.height);strokes=[];render()};
+$('clearBtn').onclick=()=>{sourceImage=null;maskCanvas=null;maskCtx=null;photoCanvas.classList.add('hidden');empty.classList.remove('hidden');$('fileInput').value='';$('resultPanel').classList.add('hidden');$('status').style.display='none'};
+document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>{$('prompt').value=b.dataset.prompt}));
+async function callApi(testOnly=false){
+ let endpoint;try{endpoint=getUrl()}catch(e){setStatus(e.message,true);return}
+ const code=$('accessCode').value.trim();if(!code){setStatus('Wpisz kod dostępu ustawiony w sekrecie Cloudflare.',true);return}
+ try{
+  const r=await fetch(endpoint+(testOnly?'/health':'/edit'),{method:testOnly?'GET':'POST',headers:{'Authorization':'Bearer '+code}});
+  if(!r.ok){let msg='HTTP '+r.status;try{msg=(await r.json()).error||msg}catch{}throw Error(msg)}
+  if(testOnly){const j=await r.json();setStatus('Połączenie działa. Model: '+j.model+'.');return}
+  return r
+ }catch(e){setStatus('Nie udało się połączyć z API: '+e.message+'. Sprawdź adres Worker, kod dostępu i ustawienie CORS.',true);throw e}
+}
+$('testBtn').onclick=async()=>{try{await callApi(true)}catch{}};
+$('editBtn').onclick=async()=>{
+ if(!sourceImage||!maskCanvas){setStatus('Najpierw wybierz zdjęcie.',true);return}
+ const prompt=$('prompt').value.trim();if(!prompt){setStatus('Wpisz opis nowego stroju.',true);return}
+ const md=maskCtx.getImageData(0,0,maskCanvas.width,maskCanvas.height).data;let painted=0;for(let i=0;i<md.length;i+=4)if(md[i]>127)painted++;
+ if(painted<60){setStatus('Zamaluj pędzlem fragment ubrania do zmiany.',true);return}
+ const btn=$('editBtn');btn.disabled=true;btn.textContent='Generuję…';setStatus('Zdjęcie jest wysyłane do Cloudflare AI. Generowanie może potrwać kilkadziesiąt sekund.');
+ try{
+  const sourceOut=document.createElement('canvas');sourceOut.width=photoCanvas.width;sourceOut.height=photoCanvas.height;sourceOut.getContext('2d').drawImage(sourceImage,0,0,sourceOut.width,sourceOut.height);
+  const sourceBlob=await new Promise(res=>sourceOut.toBlob(res,'image/png'));const maskBlob=await new Promise(res=>maskCanvas.toBlob(res,'image/png'));
+  const fd=new FormData();fd.append('image',sourceBlob,'source.png');fd.append('mask',maskBlob,'mask.png');fd.append('prompt',prompt);
+  const endpoint=getUrl(),code=$('accessCode').value.trim();
+  const response=await fetch(endpoint+'/edit',{method:'POST',headers:{'Authorization':'Bearer '+code},body:fd});
+  if(!response.ok){let msg='HTTP '+response.status;try{msg=(await response.json()).error||msg}catch{}throw Error(msg)}
+  const blob=await response.blob();if(!blob.type.startsWith('image/'))throw Error('API nie zwróciło pliku obrazu.');
+  if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=URL.createObjectURL(blob);
+  const img=$('resultImage');img.src=resultUrl;img.onload=()=>{$('resultPanel').classList.remove('hidden');$('downloadLink').href=resultUrl;setStatus('Gotowe! Możesz zapisać wynik PNG.');$('resultPanel').scrollIntoView({behavior:'smooth',block:'start'})}
+ }catch(e){if($('status').style.display==='none')setStatus('Błąd edycji: '+e.message,true);else if(!e.message.includes('Failed to fetch'))setStatus('Błąd edycji: '+e.message,true)}
+ finally{btn.disabled=false;btn.textContent='✦ Przerób zdjęcie'}
+};
+</script></body></html>
